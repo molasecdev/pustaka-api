@@ -211,8 +211,8 @@ func ExportLoans(c *gin.Context) {
 		xlsx.SetCellValue(sheetName, "H"+strconv.Itoa(i+3), loan.Penalty)
 	}
 
-	now := (time.Now()).String()
-	errSave := xlsx.SaveAs("./files/excel/loans-" + now + ".xlsx")
+	now := time.Now().Unix()
+	errSave := xlsx.SaveAs("./files/excel/loans-" + strconv.FormatInt(now, 10) + ".xlsx")
 	if errSave != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": errSave.Error()})
 		return
