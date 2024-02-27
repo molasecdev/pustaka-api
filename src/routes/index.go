@@ -14,4 +14,5 @@ func InitRoutes(router *gin.RouterGroup) {
 	BookRoutes(router)
 	LoanRoutes(router)
 	FileRoutes(router)
+	DashboardRoutes(router)
 }
