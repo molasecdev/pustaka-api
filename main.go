@@ -26,12 +26,17 @@ func cronjob() {
 		gocron.DailyJob(
 			1,
 			gocron.NewAtTimes(
-				gocron.NewAtTime(0, 1, 0), // NewAtTime(hours,minutes,seconds) format 24 jam
+				// NewAtTime(hours,minutes,seconds) format 24 jam
+				gocron.NewAtTime(0, 1, 0),
+				gocron.NewAtTime(10, 0, 0),
+				gocron.NewAtTime(14, 0, 0),
+				gocron.NewAtTime(18, 0, 0),
 			),
 		),
 		gocron.NewTask(
 			func() {
-				utils.UpdateLateStatusAndPenalty()
+				utils.AutoUpdateLateStatusAndPenalty()
+				utils.AutoDeleteNotification()
 			},
 		),
 	)

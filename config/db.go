@@ -19,6 +19,7 @@ func InitConfig() *gorm.DB {
 	db.AutoMigrate(&models.User{}, &models.Role{})
 	db.AutoMigrate(&models.Author{}, &models.Publisher{}, &models.Bookshelfs{}, &models.Category{}, &models.Language{}, &models.Book{})
 	db.AutoMigrate(&models.Loan{})
+	db.AutoMigrate(&models.Notification{})
 
 	return db
 }
