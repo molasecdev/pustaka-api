@@ -13,4 +13,7 @@ func FileRoutes(r *gin.RouterGroup) {
 	file.GET("/:filename", controllers.GetFile)
 	file.PUT("/:filename", controllers.UpdateFile)
 	file.DELETE("/:filename", controllers.DeleteFile)
+
+	file.POST("/excel/import/books", controllers.ImportExcelBooks)
+	file.POST("/excel/export/loans", controllers.ExportLoans)
 }

@@ -11,7 +11,6 @@ func LoanRoutes(r *gin.RouterGroup) {
 
 	loans.POST("/", controllers.CreateLoan)
 	loans.GET("/", controllers.GetAllLoans)
-	loans.POST("/exports", controllers.ExportLoans)
 	loans.GET("/:id", controllers.GetLoanById)
 	loans.PUT("/:id", controllers.UpdateLoan)
 	loans.DELETE("/:id", controllers.DeleteLoan)

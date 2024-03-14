@@ -16,7 +16,7 @@ func AutoUpdateLateStatusAndPenalty() {
 	penalty := 2000
 	now := time.Now()
 
-	db.Preload("User").Preload("Book").Find(&loans)
+	db.Find(&loans)
 
 	for _, loan := range loans {
 		if loan.Status != "dikembalikan" {
@@ -24,6 +24,17 @@ func AutoUpdateLateStatusAndPenalty() {
 			daysLate := int(math.Ceil(now.Sub(loan.End_date).Hours() / 24))
 
 			if daysLate > 0 {
+				var user models.User
+				var book models.Book
+
+				if err := db.Where("id = ?", loan.User_id).First(&user).Error; err != nil {
+					fmt.Println("User with ID", loan.User_id, "not found")
+					continue
+				}
+				if err := db.Where("id = ?", loan.Book_id).First(&book).Error; err != nil {
+					fmt.Println("Book with ID", loan.Book_id, "not found")
+					continue
+				}
 
 				// Simpan perubahan ke database
 				loan.Status = "telat"
@@ -33,10 +44,10 @@ func AutoUpdateLateStatusAndPenalty() {
 				}
 
 				// Buat dan simpan notifikasi
-				fullName := loan.User.Firstname + " " + loan.User.Lastname
+				fullName := user.Firstname + " " + user.Lastname
 				notification := models.Notification{
-					User_id: loan.User_id,
-					Message: "Buku dengan judul " + loan.Book.Title + " terlambat dikembalikan oleh " + fullName,
+					User_id: user.ID,
+					Message: "Buku dengan judul " + book.Title + " terlambat dikembalikan oleh " + fullName,
 				}
 				if err := controllers.SaveNotification(notification); err != nil {
 					fmt.Println("error saving notification: ", err.Error())

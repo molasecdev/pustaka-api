@@ -5,11 +5,9 @@ import (
 	"pustaka-api/config"
 	"pustaka-api/src/models"
 	"pustaka-api/types"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/360EntSecGroup-Skylar/excelize"
 	"github.com/gin-gonic/gin"
 )
 
@@ -152,71 +150,4 @@ func DeleteLoan(c *gin.Context) {
 
 	db.Where("id = ?", paramId).Delete(&loan)
 	c.JSON(http.StatusOK, gin.H{"status": http.StatusOK, "message": "Delete loan successfully!"})
-}
-
-func ExportLoans(c *gin.Context) {
-	db := config.InitConfig()
-	var loans []models.Loan
-	var datas []types.LoanDetails
-
-	query := db.Preload("User").Preload("User.Auth").Preload("User.Role").Preload("Book").Preload("Book.Author").Preload("Book.Category").Preload("Book.Publisher").Preload("Book.Bookshelf").Preload("Book.Language")
-
-	errFLoans := query.Find(&loans)
-	if errFLoans.Error != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Loans not found!"})
-		return
-	}
-
-	for _, value := range loans {
-		var loanDetail types.LoanDetails
-		loanDetail.FullName = value.User.Firstname + " " + value.User.Lastname
-		loanDetail.Title = value.Book.Title
-		loanDetail.StartDate = (value.Start_date).String()
-		loanDetail.EndDate = (value.End_date).String()
-		loanDetail.Note = value.Note
-		loanDetail.Status = value.Status
-		loanDetail.ReturnDate = value.Return_date
-		loanDetail.Penalty = value.Penalty
-		datas = append(datas, loanDetail)
-	}
-
-	xlsx := excelize.NewFile()
-	sheetName := "List loans"
-
-	xlsx.SetSheetName(xlsx.GetSheetName(1), sheetName)
-
-	xlsx.SetCellValue(sheetName, "A2", "Full Name")
-	xlsx.SetCellValue(sheetName, "B2", "Book Title")
-	xlsx.SetCellValue(sheetName, "C2", "Start Date")
-	xlsx.SetCellValue(sheetName, "D2", "End Date")
-	xlsx.SetCellValue(sheetName, "E2", "Note")
-	xlsx.SetCellValue(sheetName, "F2", "Status")
-	xlsx.SetCellValue(sheetName, "G2", "Return Date")
-	xlsx.SetCellValue(sheetName, "H2", "Penalty")
-
-	errFilter := xlsx.AutoFilter(sheetName, "A2", "H2", "")
-	if errFilter != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": errFilter.Error()})
-		return
-	}
-
-	for i, loan := range datas {
-		xlsx.SetCellValue(sheetName, "A"+strconv.Itoa(i+3), loan.FullName)
-		xlsx.SetCellValue(sheetName, "B"+strconv.Itoa(i+3), loan.Title)
-		xlsx.SetCellValue(sheetName, "C"+strconv.Itoa(i+3), loan.StartDate)
-		xlsx.SetCellValue(sheetName, "D"+strconv.Itoa(i+3), loan.EndDate)
-		xlsx.SetCellValue(sheetName, "E"+strconv.Itoa(i+3), loan.Note)
-		xlsx.SetCellValue(sheetName, "F"+strconv.Itoa(i+3), loan.Status)
-		xlsx.SetCellValue(sheetName, "G"+strconv.Itoa(i+3), loan.ReturnDate)
-		xlsx.SetCellValue(sheetName, "H"+strconv.Itoa(i+3), loan.Penalty)
-	}
-
-	now := time.Now().Unix()
-	errSave := xlsx.SaveAs("./files/excel/loans-" + strconv.FormatInt(now, 10) + ".xlsx")
-	if errSave != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": errSave.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Export loans data to xlsx file successfully"})
 }
