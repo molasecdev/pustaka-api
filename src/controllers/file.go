@@ -179,9 +179,10 @@ func ImportExcelBooks(c *gin.Context) {
 
 	type M map[string]interface{}
 	rows := make([]M, 0)
-	dataLength := 50
 
-	for i := 3; i <= dataLength; i++ {
+	startRow := 3
+	dataLength := 1000
+	for i := startRow; i <= dataLength; i++ {
 		row := M{
 			"title":       xlsx.GetCellValue(sheet1Name, fmt.Sprintf("B%d", i)),
 			"description": xlsx.GetCellValue(sheet1Name, fmt.Sprintf("C%d", i)),
