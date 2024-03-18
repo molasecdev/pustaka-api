@@ -169,10 +169,25 @@ func DeleteFile(c *gin.Context) {
 func ImportExcelBooks(c *gin.Context) {
 	db := config.InitConfig()
 
-	filePath := "/home/maulana/Desktop/pustaka-api/files/excel/File Master Create Books.xlsx"
-	xlsx, err := excelize.OpenFile(filePath)
+	file, err := c.FormFile("file")
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "path should be : 'files/excel/File Master Create Books.xlsx'"})
+		c.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "error": "Failed to get file from request"})
+		return
+	}
+
+	// Simpan file ke lokasi yang ditentukan
+	dir, _ := os.Getwd()
+	fileLocation := filepath.Join(dir, "/files/excel/", file.Filename)
+	if err := c.SaveUploadedFile(file, fileLocation); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"status": http.StatusInternalServerError, "error": err.Error()})
+		return
+	}
+
+	// Proses file Excel yang diunggah
+	xlsx, err := excelize.OpenFile(fileLocation)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"status": http.StatusBadRequest, "error": "Failed to open Excel file"})
+		return
 	}
 
 	sheet1Name := "Sheet1"
@@ -228,6 +243,18 @@ func ImportExcelBooks(c *gin.Context) {
 		errFLanguage := db.Where("LOWER(language) = LOWER(?)", val["language"]).First(&findLanguage)
 		db.Where("isbn = ?", isbn).First(&existingBook)
 
+		// jika book sudah ada, maka akan di skip
+		if existingBook.ID != uuid.Nil {
+			if existingBook.Stock != stock || existingBook.Bookshelf_id != findBookshelf.ID {
+				updatedBook := models.Book{
+					Stock:        stock,
+					Bookshelf_id: findBookshelf.ID,
+				}
+				db.Model(&existingBook).Where("id = ?", existingBook.ID).Updates(updatedBook)
+			}
+			continue
+		}
+
 		// jika data tidak ada maka akan auto create
 		if errFAuthor.Error != nil {
 			if findAuthor.Author != val["author"] {
@@ -275,11 +302,6 @@ func ImportExcelBooks(c *gin.Context) {
 			}
 		}
 
-		// jika book sudah ada, maka akan di skip
-		if existingBook.ID != uuid.Nil {
-			continue
-		}
-
 		book := models.Book{
 			Title:        title,
 			Description:  description,
@@ -294,6 +316,11 @@ func ImportExcelBooks(c *gin.Context) {
 			Language_id:  findLanguage.ID,
 		}
 		db.Create(&book)
+	}
+
+	// Hapus file yang diunggah setelah selesai diproses
+	if err := os.Remove(fileLocation); err != nil {
+		fmt.Println("Failed to delete imported file:", err)
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"status": http.StatusCreated, "message": "File imported successfully!"})
